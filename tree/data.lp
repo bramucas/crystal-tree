@@ -1,0 +1,1 @@
+trasplant(14). holds(14,id_patient,true). holds(14,rec_vhc,true). holds(14,rec_afp,560). holds(14,rec_abdominal_surgery,false). holds(14,don_microesteatosis,0). holds(14,rec_hypertension,false). holds(14,rec_provenance,0). holds(14,don_acv,true). holds(14,goal_death,true).
