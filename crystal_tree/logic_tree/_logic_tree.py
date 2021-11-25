@@ -9,14 +9,14 @@ _DEFAULT_EXTRA_LOCATION  = "default_extra.lp"
 _DEFAULT_TRACES_LOCATION = "default_traces.lp"
 
 class LogicTree:
-    def __init__(self, dt, feature_names=None):
+    def __init__(self, dt, feature_names=None, factor=0):
         if isinstance(dt, DecisionTreeClassifier):
             self._tree = dt.tree_
         elif isinstance(dt, Tree):
             self._tree = dt
         else:
             raise NotImplementedError("crystal-tree only supports sklearn decision trees by now.")
-            
+
         self.n_nodes = self._tree.node_count
         self.children_left = self._tree.children_left
         self.children_right = self._tree.children_right
@@ -32,6 +32,8 @@ class LogicTree:
             self.feature_names = feature_names
 
         self.feature_names = feature_names
+
+        self._factor = factor
 
     @property
     def traces(self):
@@ -56,13 +58,15 @@ class LogicTree:
         return self._extra
     
     def _thresholds(self):
-        return "\n".join([f'thres({int(v*100)}).' for v in set(self.threshold) if v>0])
+        mult = 10**self._factor
+        return "\n".join([f'thres({int(v*mult)}).' for v in set(self.threshold) if v>0])
 
     def which_class(self, val):
         max_index = list(val[0]).index(max(val[0]))
-        return f'class({max_index},P)'
+        return f'class({max_index},I)'
 
     def __write_rule(self, stack):
+        mult = 10**self._factor
         nid, _ = stack.pop()
         head = self.which_class(self.value[nid])
 
@@ -80,12 +84,13 @@ class LogicTree:
                 min_max[f]["max_le"]=t
 
         for f, vs in min_max.items():
+            fval = f'"{f}"'  # Must be between quotation marks
             if not np.isinf(vs["min_gt"]) and not np.isinf(vs["max_le"]):
-                literals.append(f'between(P,{f},{int(vs["min_gt"]*100)},{int(vs["max_le"]*100)})')
+                literals.append(f'between(I,{fval},{int(vs["min_gt"]*mult)},{int(vs["max_le"]*mult)})')
             elif np.isinf(vs["min_gt"]) and not np.isinf(vs["max_le"]):
-                literals.append(f'le(P,{f},{int(vs["max_le"]*100)})')
+                literals.append(f'le(I,{fval},{int(vs["max_le"]*mult)})')
             elif np.isinf(vs["max_le"]) and not np.isinf(vs["min_gt"]):
-                literals.append(f'gt(P,{f},{int(min_max[f]["min_gt"]*100)})')
+                literals.append(f'gt(I,{fval},{int(min_max[f]["min_gt"]*mult)})')
 
         rule = f'{head} :- {", ".join(literals)}.'
         return rule
@@ -105,7 +110,7 @@ class LogicTree:
     def get_paths(self):
         if not hasattr(self, '_paths'):
             setattr(self, '_paths', 
-                "%%% thresholds\n{thresholds}\n%%% paths\n{program}\n\n".format(
+                "%%% thresholds\n{thresholds}\n%%% paths\n{program}\n".format(
                     program=self._rule_per_leaf(),
                     thresholds=self._thresholds(),
                 )

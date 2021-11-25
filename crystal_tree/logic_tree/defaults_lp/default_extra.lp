@@ -1,8 +1,8 @@
-gt(P, F, T) :- holds(P, F, V), V>T, thres(T).
-le(P, F, T) :- holds(P, F, V), V<=T, thres(T).
-between(P, F, Min, Max) :- holds(P, F, V), V>Min, thres(Min), V<=Max, thres(Max).
+gt(I, F, T) :- value(I, F, V), V>T, thres(T).
+le(I, F, T) :- value(I, F, V), V<=T, thres(T).
+between(I, F, Min, Max) :- value(I, F, V), V>Min, thres(Min), V<=Max, thres(Max).
 
-%!trace_rule {"Predicted class % for instance %", C, P}
-prediction(P) :- class(C,P).
+%!trace_rule {"Predicted class % for instance %", C, I}
+prediction(I) :- class(C,I).
 
-%!show_trace prediction(P).
+%!show_trace prediction(I).
