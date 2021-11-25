@@ -83,9 +83,14 @@ class CrystalTree():
             factor = self.max_decimal_places(instances)
         else:
             factor = self.factor
-        self.set_logic_tree(feature_names=self.feature_names, factor=factor)
-        
-        dafacter = Dafacter(instances, self._logic_tree.feature_names, factor=factor)
+
+        if self.feature_names is None and hasattr(instances, 'columns'):
+            feature_names = instances.columns
+        else:
+            feature_names = self.feature_names
+
+        self.set_logic_tree(feature_names=feature_names, factor=factor)
+        dafacter = Dafacter(instances, feature_names, factor=factor)
         control = XclingoControl(n_solutions=1, n_explanations=0)
         control.add("cases", [], dafacter.as_program_string())
         control.add("paths", [], self._logic_tree.get_paths())

@@ -25,13 +25,11 @@ class LogicTree:
         self.value = self._tree.value
 
         if feature_names is None:
-            self.feature_names = [f'f{i}' for i in range(max(self.feature))]
+            self.feature_names = [f'f{i}' for i in range(max(self.feature)+1)]
         else:
             if len(feature_names) != max(self.feature)+1:
                 raise ValueError("Feature names length does not match tree data.")
             self.feature_names = feature_names
-
-        self.feature_names = feature_names
 
         self._factor = factor
 
