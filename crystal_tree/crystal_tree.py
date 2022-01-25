@@ -6,6 +6,61 @@ from dafact import Dafacter
 from xclingo import XclingoControl, XclingoContext
 from decimal import Decimal
 
+class Condition:
+    def __init__(self, operator, value):
+        self.operator = operator
+        self.value = value
+
+    def to_atom(self):
+        return f'V{self.operator}{self.value}'
+
+class Trace:
+    def __init__(self, text, feature, conditions=None, target_class=None):
+        self.text = text
+        self.feature = feature
+
+        self.conditions = [] if conditions is None else conditions
+        self.target_class = target_class
+    
+    def to_xclingo_code(self):
+        def find_all(s, to_find):
+            i = -1
+            while True:
+                i = s.find(to_find, i+1)
+                if i == -1:
+                    break
+                yield i, to_find
+
+        # check if is prediction or feature
+        text = self.text
+        variables = []
+        if self.feature == "prediction":
+            # find if %_class and %_instance and its order
+            occurrences = sorted(list(find_all(self.text, "%_class")) + list(find_all(self.text, "%_instance")))
+            variables = []
+            for _, threshold in occurrences:
+                if threshold == "%_class":
+                    variables.append("C")
+                elif threshold == "%_instance":
+                    variables.append("I")
+            # change thresholds
+            text = self.text.replace("%_class", "%").replace("%_instance", "%")
+        
+        # builds %!trace theory atom
+        xclingo_trace = f'%!trace {{"{text}",{",".join([v for v in variables])}}}'
+        
+        # builds conditional atom
+        conditional_atom = 'prediction(I) : ' if self.feature == "prediction" else  f'holds(I,{self.feature},V) : '
+        
+        conditions = []
+        conditions += [c.to_atom() for c in self.conditions]
+        if self.target_class is not None:
+            conditions.append('class(C,I)')
+            conditions.append(f'C={self.target_class}')
+
+        xclingo_trace += ' ' + conditional_atom + ','.join(conditions) + '.'
+        return xclingo_trace
+
 class CrystalTreeContext(XclingoContext):
     def __init__(self, factor=0):
         super().__init__()
@@ -29,8 +84,6 @@ class CrystalTreeContext(XclingoContext):
                 text = text.replace("%", val_str, 1)
         return [String(text)]
 
-
-
 class CrystalTree():
     def __init__(self, dt, feature_names=None, factor=None):
         self._dt = dt
@@ -38,6 +91,8 @@ class CrystalTree():
 
         self.feature_names = feature_names
         self.factor = factor
+        self.prediction_traces = []
+        self.feature_traces = []
 
         self._logic_tree = None
     
@@ -78,6 +133,18 @@ class CrystalTree():
                     max = places
         return max
 
+    def add_trace(self, trace:Trace):
+        if trace.feature == "prediction":
+            self.prediction_traces.append(trace)
+        else:
+            self.feature_traces.append(trace)
+
+    def get_custom_prediction_traces(self):
+        return "\n".join([t.to_xclingo_code() for t in self.prediction_traces])
+
+    def get_custom_feature_traces(self):
+        return "\n".join([t.to_xclingo_code() for t in self.prediction_traces])
+
     def explain(self, instances):
         if self.factor is None:
             factor = self.max_decimal_places(instances)
@@ -94,8 +161,15 @@ class CrystalTree():
         control = XclingoControl(n_solutions=1, n_explanations=0)
         control.add("cases", [], dafacter.as_program_string())
         control.add("paths", [], self._logic_tree.get_paths())
-        control.add("extra", [], self._logic_tree.extra)
-        control.add("traces", [], self._logic_tree.traces)
+        control.add("extra", [], self._logic_tree.extra)        
+        if self.prediction_traces:
+            control.add("custom_prediction_traces", [], self.get_custom_prediction_traces())
+        else:
+            control.add("default_prediction_traces", [], self._logic_tree.prediction_traces)
+        if self.feature_traces:
+            control.add("custom_feature_traces", [], self.get_custom_feature_traces())
+        else:
+            control.add("default_feature_traces", [], self._logic_tree.feature_traces)
 
         control.ground([("base", [])], explainer_context=CrystalTreeContext(factor))
         control.explain()
