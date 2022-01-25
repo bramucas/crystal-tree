@@ -6,7 +6,8 @@ import numpy as np
 from . import defaults_lp
 
 _DEFAULT_EXTRA_LOCATION  = "default_extra.lp"
-_DEFAULT_TRACES_LOCATION = "default_traces.lp"
+_DEFAULT_PREDICTION_TRACES_LOCATION = "default_prediction_traces.lp"
+_DEFAULT_FEATURE_TRACES_LOCATION = "default_feature_traces.lp"
 
 class LogicTree:
     def __init__(self, dt, feature_names=None, factor=0):
@@ -34,15 +35,26 @@ class LogicTree:
         self._factor = factor
 
     @property
-    def traces(self):
-        if not hasattr(self, '_traces'):
+    def prediction_traces(self):
+        if not hasattr(self, '_prediction_traces'):
             try:
                 import importlib.resources as pkg_resources
             except ImportError:
                 # Try backported to PY<37 `importlib_resources`.
                 import importlib_resources as pkg_resources
-            setattr(self, '_traces', pkg_resources.read_text(defaults_lp, _DEFAULT_TRACES_LOCATION))
-        return self._traces
+            setattr(self, '_prediction_traces', pkg_resources.read_text(defaults_lp, _DEFAULT_PREDICTION_TRACES_LOCATION))
+        return self._prediction_traces
+
+    @property
+    def feature_traces(self):
+        if not hasattr(self, '_feature_traces'):
+            try:
+                import importlib.resources as pkg_resources
+            except ImportError:
+                # Try backported to PY<37 `importlib_resources`.
+                import importlib_resources as pkg_resources
+            setattr(self, '_feature_traces', pkg_resources.read_text(defaults_lp, _DEFAULT_FEATURE_TRACES_LOCATION))
+        return self._feature_traces
 
     @property
     def extra(self):
