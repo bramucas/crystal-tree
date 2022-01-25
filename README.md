@@ -37,13 +37,6 @@ X, y = load_iris(return_X_y=True)
 clf = DecisionTreeClassifier()
 clf.fit(X,y)
 
-# Loads dataset
-X, y = load_iris(return_X_y=True, as_frame=True)
-
-# Trains decision tree
-clf = DecisionTreeClassifier()
-clf.fit(X,y)
-
 # Translates the classifier into an explainable logic program
 crys_tree = CrystalTree(clf)
 
