@@ -1,21 +1,44 @@
-import dafact
+"""crystal-tree package main classes.
+"""
 from numpy import asarray
-from crystal_tree.logic_tree import LogicTree
+
 from clingo.symbol import String, SymbolType
 from dafact import Dafacter
 from xclingo import XclingoControl, XclingoContext
-from decimal import Decimal
+
+from crystal_tree.logic_tree import LogicTree
 
 class Condition:
-    def __init__(self, operator, value):
+    """Encapsules a condition in a logic tree.
+    """
+    def __init__(self, operator:str, value:str):
+        """
+        Args:
+            operator (str): string representation of the operator. Accepted values: '<', '>', '=', '!=', '<=' or '>='.
+            value (str): string representation of the value.
+        """
         self.operator = operator
         self.value = value
 
     def to_atom(self):
+        """Returns the condition as a clingo atom.
+
+        Returns:
+            str: the atom representation of the condition.
+        """        
         return f'V{self.operator}{self.value}'
 
 class Trace:
+    """Represents a trace for the logic tree.
+    """
     def __init__(self, text, feature, conditions=None, target_class=None):
+        """
+        Args:
+            text (str): text for the text label.
+            feature (str): feature which will be affected by the trace.
+            conditions (Condition, optional): conditions for the trace to apply. Defaults to None.
+            target_class (str, optional): class which will be affected by the trace. Defaults to None.
+        """
         self.text = text
         self.feature = feature
 
@@ -23,6 +46,11 @@ class Trace:
         self.target_class = target_class
     
     def to_xclingo_code(self):
+        """_summary_
+
+        Returns:
+            str:         
+        """        
         def find_all(s, to_find):
             i = -1
             while True:
@@ -62,16 +90,38 @@ class Trace:
         return xclingo_trace
 
 class CrystalTreeContext(XclingoContext):
+    """_summary_
+
+    Args:
+        XclingoContext (_type_): _description_
+    """
     def __init__(self, factor=0):
         super().__init__()
         self.div = 10**factor
 
     @staticmethod
     def next_is_threshold(string):
+        """_summary_
+
+        Args:
+            string (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
         idx = string.index("%")
         return string[idx:idx+3] == "%_t"
 
     def label(self, text, tup):
+        """_summary_
+
+        Args:
+            text (_type_): _description_
+            tup (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
         if text.type == SymbolType.String:
             text = text.string
         else:
@@ -85,6 +135,8 @@ class CrystalTreeContext(XclingoContext):
         return [String(text)]
 
 class CrystalTree():
+    """_summary_
+    """
     def __init__(self, dt, feature_names=None, factor=None):
         self._dt = dt
         self.predict = self._dt.predict
@@ -97,6 +149,18 @@ class CrystalTree():
         self._logic_tree = None
     
     def to_annotated_logic_program(self, paths="paths.lp", extra="extra.lp", traces="traces.lp", feature_names=None, factor=None):
+        """_summary_
+
+        Args:
+            paths (str, optional): _description_. Defaults to "paths.lp".
+            extra (str, optional): _description_. Defaults to "extra.lp".
+            traces (str, optional): _description_. Defaults to "traces.lp".
+            feature_names (_type_, optional): _description_. Defaults to None.
+            factor (_type_, optional): _description_. Defaults to None.
+
+        Raises:
+            RuntimeError: _description_
+        """
         if self._logic_tree is None:
             if factor is None:
                 raise RuntimeError('argument factor can not be None')
@@ -106,17 +170,32 @@ class CrystalTree():
                 extra_file.write(self._logic_tree.extra)
         if traces is not None:
             with open(traces, 'w') as traces_file:
-                traces_file.write(self._logic_tree.traces)
+                traces_file.write(self._logic_tree.prediction_traces)
+                traces_file.write(self._logic_tree.feature_traces)
         if paths is not None:
             with open(paths, 'w') as paths_file:
                 paths_file.write(self._logic_tree.get_paths())
 
     def set_logic_tree(self, feature_names=None, factor=None):
+        """_summary_
+
+        Args:
+            feature_names (_type_, optional): _description_. Defaults to None.
+            factor (_type_, optional): _description_. Defaults to None.
+
+        Raises:
+            RuntimeError: _description_
+        """
         if factor is None:
             raise RuntimeError('argument factor can not be None')
         self._logic_tree = LogicTree(self._dt, feature_names=feature_names, factor=factor)
 
     def max_decimal_places(self, matrix_2d):
+        """_summary_
+
+        Args:
+            matrix_2d (_type_): _description_
+        """
         def get_decimal_places(number):
             number = str(number).strip('0')
             try:
@@ -134,18 +213,38 @@ class CrystalTree():
         return max
 
     def add_trace(self, trace:Trace):
+        """_summary_
+
+        Args:
+            trace (Trace): _description_
+        """
         if trace.feature == "prediction":
             self.prediction_traces.append(trace)
         else:
             self.feature_traces.append(trace)
 
     def get_custom_prediction_traces(self):
+        """_summary_
+
+        Returns:
+            _type_: _description_
+        """
         return "\n".join([t.to_xclingo_code() for t in self.prediction_traces])
 
     def get_custom_feature_traces(self):
+        """_summary_
+
+        Returns:
+            _type_: _description_
+        """
         return "\n".join([t.to_xclingo_code() for t in self.prediction_traces])
 
     def explain(self, instances):
+        """_summary_
+
+        Args:
+            instances (_type_): _description_
+        """
         if self.factor is None:
             factor = self.max_decimal_places(instances)
         else:
@@ -159,17 +258,18 @@ class CrystalTree():
         self.set_logic_tree(feature_names=feature_names, factor=factor)
         dafacter = Dafacter(instances, feature_names, factor=factor)
         control = XclingoControl(n_solutions=1, n_explanations=0)
-        control.add("cases", [], dafacter.as_program_string())
-        control.add("paths", [], self._logic_tree.get_paths())
-        control.add("extra", [], self._logic_tree.extra)        
+        control.add("base", [], dafacter.as_program_string())
+        control.add("base", [], self._logic_tree.get_paths())
+        control.add("base", [], self._logic_tree.extra)
         if self.prediction_traces:
-            control.add("custom_prediction_traces", [], self.get_custom_prediction_traces())
+            control.add("base", [], self.get_custom_prediction_traces())
         else:
-            control.add("default_prediction_traces", [], self._logic_tree.prediction_traces)
+            control.add("base", [], self._logic_tree.prediction_traces)
         if self.feature_traces:
-            control.add("custom_feature_traces", [], self.get_custom_feature_traces())
+            control.add("base", [], self.get_custom_feature_traces())
         else:
-            control.add("default_feature_traces", [], self._logic_tree.feature_traces)
+            control.add("base", [], self._logic_tree.feature_traces)
 
         control.ground([("base", [])], explainer_context=CrystalTreeContext(factor))
-        control.explain()
+
+        return  asarray(list(next(control.explain())))  # should always have only one answer

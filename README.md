@@ -1,23 +1,27 @@
 # crystal-tree
 
-The goal of crystal-tree package is to provide simple natural language explanations for the predictions from decision trees. 
+The goal of crystal-tree package is to provide simple, crystal-clear, natural language explanations for the predictions from classification Decision Trees. 
 
-This simple python package provides an object for translating a (for now [scikit-learn](https://scikit-learn.org/stable/)'s) decision tree into an explainable logic program for [xclingo](https://github.com/bramucas/xclingo).
+This simple python package provides an object for obtaining explanations from a (for now [scikit-learn](https://scikit-learn.org/stable/)'s) Decision Tree Classifier.
 
-![crystal-tree usage pipeline](doc/cystal-tree-flowchart.png)
+The implementations consists in the translation of the Decision Tree into an explainable logic program for [xclingo](https://github.com/bramucas/xclingo).
 
-## Install
-*Use python3*
+Given an input, the CrystalTree object will provide the prediction from the original tree, justified by a summarized version of the conditions checked by the tree to ultimately produce the prediction. The explanations are provided as python objects which can be easily represented as text. The text used for the explanations admit some personalization, which allows the user to adapt them particular contexts (different languages, different levels of expertise, etc.)
 
-* Download/clone the repository
-* Move into the repository directory
-* Then:
+
+## Installation
 
 ```
-python -m pip install .
+python -m pip install crystal-tree
 ```
 
 ## Usage
+
+The following program will train a Decision Tree into the task of predicting types of flowers (throught the well-known Iris dataset), and then it will some explanations as an example.
+The program requires the following modules to be installed:
+```
+python -m pip instll sklearn pandas
+```
 
 ```python
 from sklearn.datasets import load_iris
@@ -25,13 +29,8 @@ from sklearn.tree import DecisionTreeClassifier
 
 from crystal_tree import CrystalTree
 
-def setup_labels(tree):
-    tree.add_trace(Trace("%_instance is iris-virginica", "prediction", target_class=0))
-    tree.add_trace(Trace("%_instance is iris-versicolor", "prediction", target_class=1))
-    tree.add_trace(Trace("%_instance is iris-setosa", "prediction", target_class=2))
-
 # Loads dataset
-X, y = load_iris(return_X_y=True)
+X, y = load_iris(return_X_y=True, as_frame=True)
 
 # Trains decision tree
 clf = DecisionTreeClassifier()
@@ -40,13 +39,21 @@ clf.fit(X,y)
 # Translates the classifier into an explainable logic program
 crys_tree = CrystalTree(clf)
 
-# Creates the labels used by the tree
-# if skipped, default labels will be used
-setup_labels(crys_tree)
-
-# Print explanations of input X
-crys_tree.explain(X)
-
-# Write the explainable tree into files
-# crys_tree.to_annotated_logic_program()
+# Print explanations of input X (two arbitrary rows)
+for e in crys_tree.explain(X.iloc[[0, 54]]):
+    print(e.ascii_tree())
 ```
+
+This will produce the following output.
+```
+  *
+  |__Predicted class 0 for instance 0
+  |  |__petal width (cm) <= 0.8
+
+  *
+  |__Predicted class 1 for instance 1
+  |  |__petal length (cm) <= 4.9
+  |  |__petal width (cm) in (0.8,1.6]
+```
+
+More examples concerning personalization of explanations can be found in the ```examples/``` directory in this repository. 
