@@ -27,8 +27,11 @@ setuptools.setup(
         'logic programming',
         'answer set programming',
     ],
+    include_package_data=True,
     python_requires='>=3.6.0',
     install_requires=[
+        'importlib_resources',
+        'setuptools-git',
         'numpy',
         'sklearn',
         'dafact',
@@ -36,5 +39,7 @@ setuptools.setup(
     ],
     packages=[
         'crystal_tree',
+        'crystal_tree.logic_tree',
+        'crystal_tree.logic_tree.defaults_lp',
     ]
 )
