@@ -1,4 +1,5 @@
 # crystal-tree
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/bramucas/crystal-tree/binder?labpath=example%2Fexamples.ipynb)
 
 The goal of crystal-tree package is to provide simple, crystal-clear, natural language explanations for the predictions from classification Decision Trees. 
 
@@ -8,6 +9,7 @@ The implementations consists in the translation of the Decision Tree into an exp
 
 Given an input, the CrystalTree object will provide the prediction from the original tree, justified by a summarized version of the conditions checked by the tree to ultimately produce the prediction. The explanations are provided as python objects which can be easily represented as text. The text used for the explanations admit some personalization, which allows the user to adapt them particular contexts (different languages, different levels of expertise, etc.)
 
+Try it out without installing anything in [Crystal-tree Binder](https://mybinder.org/v2/gh/bramucas/crystal-tree/binder?labpath=example%2Fexamples.ipynb)
 
 ## Installation
 
