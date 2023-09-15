@@ -14,5 +14,5 @@ clf.fit(X,y)
 crys_tree = CrystalTree(clf)
 
 # Print explanations of input X (two arbitrary rows)
-for e in crys_tree.explain(X.iloc[[0, 54]]):
+for e in crys_tree.explain(X.iloc[[0, 54]], feature_names=X.columns.tolist()):
     print(e.ascii_tree())
