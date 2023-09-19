@@ -31,7 +31,6 @@ class BaseTreeAdapter:
             if feature_names is not None:
                 translation += f'%%% feature names\n{self._feature_names_rules(feature_names)}%\n'
             setattr(self, '_logic_program_translation', translation)
-        print(getattr(self, '_logic_program_translation'))
         return getattr(self, '_logic_program_translation')
 
     def _rule_per_leaf(self, factor):
