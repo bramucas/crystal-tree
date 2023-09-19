@@ -218,7 +218,6 @@ class CrystalTree:
         dafacter = Dafacter(instances, factor=factor)
         control = XclingoControl(n_solutions=1, n_explanations=0)
         control.add("base", [], dafacter.as_program_string())
-        print(dafacter.as_program_string())
         control.add("base", [], self._logic_tree.get_logic_program(
             factor,
             prediction_traces = None if self.prediction_traces is None
